@@ -45,7 +45,7 @@ class HomeController extends Controller
     public function insertPost()
     {
         $last = Tpost::where('id', '1337')->value('last');
-        $posts = Tblarticle::take(10)->where('id', '>', $last)->get();
+        $posts = Tblarticle::take(5000)->where('id', '>', $last)->get();
         $count = $last;
 
         foreach ($posts as $post) {
@@ -134,7 +134,7 @@ class HomeController extends Controller
 
         $last = Tpage::where('id', '1337')->first()->last;
 
-        $pages = Page::take(2000)->where('id', '>', $last)->get();
+        $pages = Page::take(5000)->where('id', '>', $last)->get();
         $count = $last;
         foreach ($pages as $page) {
             $new_post = array(

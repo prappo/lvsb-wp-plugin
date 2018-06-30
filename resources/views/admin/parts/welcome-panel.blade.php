@@ -1,5 +1,13 @@
 <div class="welcome-panel">
+
+    <b> [ Total Post {{\App\Models\Tblarticle::count()}} ]</b>
+    <b>[ Total Page {{\App\Models\Page::count()}} ]</b>
+    <b>[ Total category {{\App\Models\Tblarticle_categorie::count()}} ]</b>
+
+</div>
+<div class="welcome-panel">
     <div class="welcome-panel-content">
+
         <div id="msgBox"></div>
 
         <h1>Step 1</h1>
@@ -13,9 +21,10 @@
         <button class="button button-primary" id="migratePosts">Start Post Migration</button>
         <b style="color:darkgreen">[ {{\App\Models\Tpost::where('id','1337')->value('last')}} migrated ]</b>
 
-
-        <br><br>
     </div>
+
+    <br><br>
+</div>
 
 </div>
 
