@@ -1,0 +1,1 @@
+<lumen-auth-login :auth_user="{{ json_encode($user) }}"></lumen-auth-login>
