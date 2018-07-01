@@ -29,10 +29,18 @@ class HomeController extends Controller
 
     public function test()
     {
-        $cat = new Cat();
-        $cat->old_id = 1;
-        $cat->new_id = 2;
-        $cat->save();
+        $new_post = array(
+            'post_title' => "My awesome post",
+            'post_content' => "Some cool content",
+            'post_name' => sanitize_title_with_dashes('My awesome post','','save')."_A123.html",
+            'post_status' => 'publish',
+            'post_author' => 1,
+            'post_type' => 'page'
+        );
+        $id = wp_insert_post($new_post);
+        return $id;
+
+
 
 
     }
@@ -45,7 +53,7 @@ class HomeController extends Controller
     public function insertPost()
     {
         $last = Tpost::where('id', '1337')->value('last');
-        $posts = Tblarticle::take(5000)->where('id', '>', $last)->get();
+        $posts = Tblarticle::take(2000)->where('id', '>', $last)->get();
         $count = $last;
 
         foreach ($posts as $post) {
@@ -134,7 +142,7 @@ class HomeController extends Controller
 
         $last = Tpage::where('id', '1337')->first()->last;
 
-        $pages = Page::take(5000)->where('id', '>', $last)->get();
+        $pages = Page::take(2000)->where('id', '>', $last)->get();
         $count = $last;
         foreach ($pages as $page) {
             $new_post = array(

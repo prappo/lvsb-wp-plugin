@@ -1,25 +1,36 @@
 <div class="welcome-panel">
-
-    <b> [ Total Post {{\App\Models\Tblarticle::count()}} ]</b>
-    <b>[ Total Page {{\App\Models\Page::count()}} ]</b>
-    <b>[ Total category {{\App\Models\Tblarticle_categorie::count()}} ]</b>
-
-</div>
-<div class="welcome-panel">
     <div class="welcome-panel-content">
-
+        <b> [ Total Post {{\App\Models\Tblarticle::count()}} ]</b>
+        <b>[ Total Page {{\App\Models\Page::count()}} ]</b>
+        <b>[ Total category {{\App\Models\Tblarticle_categorie::count()}} ]</b>
         <div id="msgBox"></div>
 
-        <h1>Step 1</h1>
+
+        <h1>Step 1 </h1>
+        <h4><b>@if(\App\Models\Tpage::where('id','1337')->value('last') >= \App\Models\Page::count())
+                    (Finished) @else (Not Finished) @endif</b></h4>
+        <b style="color: darkgreen">[ {{\App\Models\Tpage::where('id','1337')->value('last')}} Migrated ] </b><br>
         <button id="migratePage" class="button button-primary">Start Page Migration</button>
-        <b style="color: darkgreen">[ {{\App\Models\Tpage::where('id','1337')->value('last')}} Migrated ] </b>
+
+        <button id="stopMigratePage" class="button button-delete">Stop Page Migration</button>
+
+        <hr>
 
         <h1>Step 2</h1>
+        <h4><b>@if(\App\Models\Tcat::count() >=\App\Models\Tblarticle_categorie::count())
+                    (Finished) @else (Not Finished) @endif</b></h4>
+        <b style="color:darkgreen">[ {{\App\Models\Tcat::count()}} migrated] </b><br>
         <button class="button button-primary" id="migrateCategories">Start Category Migration</button>
-        <b style="color:darkgreen">[ {{\App\Models\Tcat::count()}} migrated] </b>
+        <button class="button button-default" id="stopMigrateCategory">Stop Category Migration</button>
+        <hr>
+
         <h1>Step 3</h1>
+        <h4><b> @if(\App\Models\Tpost::where('id','1337')->value('last') >= \App\Models\Tblarticle::count())
+                    (Finished) @else (Not Finished) @endif</b></h4>
+        <b style="color:darkgreen">[ {{\App\Models\Tpost::where('id','1337')->value('last')}} migrated ]</b><br>
         <button class="button button-primary" id="migratePosts">Start Post Migration</button>
-        <b style="color:darkgreen">[ {{\App\Models\Tpost::where('id','1337')->value('last')}} migrated ]</b>
+        <button class="button button-default" id="stopMigratePosts">Stop Post Migration</button>
+
 
     </div>
 

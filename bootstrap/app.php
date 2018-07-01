@@ -6,11 +6,11 @@
 |--------------------------------------------------------------------------
 */
 
-$wpLoad = realpath(__DIR__."/../../../../wp-load.php");
-if(!class_exists('Laravel\Lumen\Application') && is_file($wpLoad)){
-	require_once($wpLoad);
-}else{
-	exit('Wp-Lumen: wp-load.php not found.  Check path in bootstrap/app.php (line: 11)');
+$wpLoad = realpath(__DIR__ . "/../../../../wp-load.php");
+if (!class_exists('Laravel\Lumen\Application') && is_file($wpLoad)) {
+    require_once($wpLoad);
+} else {
+    exit('Wp-Lumen: wp-load.php not found.  Check path in bootstrap/app.php (line: 11)');
 }
 
 /*
@@ -19,7 +19,7 @@ if(!class_exists('Laravel\Lumen\Application') && is_file($wpLoad)){
 |--------------------------------------------------------------------------
 | Loaded in mu-plugins or, include here.
 */
-require_once __DIR__.'/../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +27,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 |--------------------------------------------------------------------------
 */
 try {
-	(new Dotenv\Dotenv(__DIR__.'/../'))->overload();
+    (new Dotenv\Dotenv(__DIR__ . '/../'))->overload();
 } catch (Dotenv\Exception\InvalidPathException $e) {
     exit('Wp-Lumen: No Environment Settings (.env) Found.');
 }
@@ -41,7 +41,7 @@ try {
 | application as an "IoC" container and router for this framework.
 */
 $app = new Laravel\Lumen\Application(
-    realpath(__DIR__.'/../')
+    realpath(__DIR__ . '/../')
 );
 $app->withEloquent();
 
@@ -80,10 +80,10 @@ $app->singleton(
 //$app->middleware([]);
 
 $app->routeMiddleware([
-	'auth' => App\Http\Middleware\Authenticate::class,
-	'start_session' => \Illuminate\Session\Middleware\StartSession::class,
-	'share_errors' => \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-	'no404s' => App\Http\Middleware\SilenceWp404s::class
+    'auth' => App\Http\Middleware\Authenticate::class,
+    'start_session' => \Illuminate\Session\Middleware\StartSession::class,
+    'share_errors' => \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    'no404s' => App\Http\Middleware\SilenceWp404s::class
 ]);
 /*
 |--------------------------------------------------------------------------
@@ -100,29 +100,29 @@ $app->register(App\Providers\EventServiceProvider::class);
 $app->register(App\Providers\UtilityServiceProvider::class);
 
 
-if(!$app->runningInConsole()){
-	if($app->make('config')->get('session.enabled')){
-		$app->bind(\Illuminate\Session\SessionManager::class, function ($app) {
-			return new \Illuminate\Session\SessionManager($app);
-		});
-		$app->register(\Illuminate\Session\SessionServiceProvider::class);
-		$app->middleware([\Illuminate\Session\Middleware\StartSession::class]);
-	}
+if (!$app->runningInConsole()) {
+    if ($app->make('config')->get('session.enabled')) {
+        $app->bind(\Illuminate\Session\SessionManager::class, function ($app) {
+            return new \Illuminate\Session\SessionManager($app);
+        });
+        $app->register(\Illuminate\Session\SessionServiceProvider::class);
+        $app->middleware([\Illuminate\Session\Middleware\StartSession::class]);
+    }
 
 
-	$app->register(App\Providers\WordpressServiceProvider::class);
-	$app->register(App\Providers\DebugbarServiceProvider::class);
+    $app->register(App\Providers\WordpressServiceProvider::class);
+    $app->register(App\Providers\DebugbarServiceProvider::class);
 
-	/*
-	|--------------------------------------------------------------------------
-	| Include WP CleanUp Mods
-	|--------------------------------------------------------------------------
-	| Here we will register all of the application's WP modifications.
-	*/
-	//$files = $app->make('files');
-	//$files->requireOnce(realpath(__DIR__.'/../cleanup/head.php'));
-	//$files->requireOnce(realpath(__DIR__.'/../cleanup/rest-api.php'));
-	//$files->requireOnce(realpath(__DIR__.'/../cleanup/emojis.php'));
+    /*
+    |--------------------------------------------------------------------------
+    | Include WP CleanUp Mods
+    |--------------------------------------------------------------------------
+    | Here we will register all of the application's WP modifications.
+    */
+    //$files = $app->make('files');
+    //$files->requireOnce(realpath(__DIR__.'/../cleanup/head.php'));
+    //$files->requireOnce(realpath(__DIR__.'/../cleanup/rest-api.php'));
+    //$files->requireOnce(realpath(__DIR__.'/../cleanup/emojis.php'));
 }
 
 
@@ -134,44 +134,87 @@ if(!$app->runningInConsole()){
 | the application. This will provide all of the URLs the application
 | can respond to, as well as the controllers that may handle them.
 */
-if(!$app->runningInConsole()) {
-	add_action( 'init', function () use ( $app ) {
-		$request = Illuminate\Http\Request::capture();
-		if ( ! is_admin() ) {
+if (!$app->runningInConsole()) {
+    add_action('init', function () use ($app) {
+        $request = Illuminate\Http\Request::capture();
+        if (!is_admin()) {
 
-			//Boot Router for Front-end Requests
-			$app->router->group( [
-				'namespace' => 'App\Http\Controllers',
-			], function ( $router ) {
-				require __DIR__ . '/../routes/web.php';
-			} );
+            //Boot Router for Front-end Requests
+            $app->router->group([
+                'namespace' => 'App\Http\Controllers',
+            ], function ($router) {
+                require __DIR__ . '/../routes/web.php';
+            });
 
-			//Handle Request
-			$response = $app->handle( $request );
+            //Handle Request
+            $response = $app->handle($request);
 
-			//Send Response by Overwriting WP (eager)
-			if ( $app->make( 'config' )->get( 'router.loading' ) == 'eager' ) {
+            //Send Response by Overwriting WP (eager)
+            if ($app->make('config')->get('router.loading') == 'eager') {
 
-				if ( $response->content() ) {
-					$response->send();
-					exit( $response->status() );
-				}
+                if ($response->content()) {
+                    $response->send();
+                    exit($response->status());
+                }
 
-				//Send Response on 404 (lazy)
-			} elseif ( is_404() ) {
+                //Send Response on 404 (lazy)
+            } elseif (is_404()) {
 
-				//Send Response During Template Redirect
-				add_action( 'template_redirect', function () use ( $app, $request, $response ) {
-					if ( $response->content() ) {
-						$response->send();
-						exit( $response->status() );
-					}
-				}, 1 );
-			}
-		} else {
-			//Handle Request
-			$app->handle( $request );
-		}
-	} );
+                //Send Response During Template Redirect
+                add_action('template_redirect', function () use ($app, $request, $response) {
+                    if ($response->content()) {
+                        $response->send();
+                        exit($response->status());
+                    }
+                }, 1);
+            }
+        } else {
+            //Handle Request
+            $app->handle($request);
+        }
+    });
+
+
+//	custom url
+
+    add_action('init', 'witsolution_page_permalink', -1);
+    register_activation_hook(__FILE__, 'witsolution_active');
+    register_deactivation_hook(__FILE__, 'witsolution_deactive');
+
+
+    function witsolution_page_permalink()
+    {
+        global $wp_rewrite;
+        if (!strpos($wp_rewrite->get_page_permastruct(), '.html')) {
+            $wp_rewrite->page_structure = $wp_rewrite->page_structure . '.html';
+        }
+    }
+
+    add_filter('user_trailingslashit', 'witsolution_page_slash', 66, 2);
+    function witsolution_page_slash($string, $type)
+    {
+        global $wp_rewrite;
+        if ($wp_rewrite->using_permalinks() && $wp_rewrite->use_trailing_slashes == true && $type == 'page') {
+            return untrailingslashit($string);
+        } else {
+            return $string;
+        }
+    }
+
+    function witsolution_active()
+    {
+        global $wp_rewrite;
+        if (!strpos($wp_rewrite->get_page_permastruct(), '.html')) {
+            $wp_rewrite->page_structure = $wp_rewrite->page_structure . '.html';
+        }
+        $wp_rewrite->flush_rules();
+    }
+
+    function witsolution_deactive()
+    {
+        global $wp_rewrite;
+        $wp_rewrite->page_structure = str_replace(".html", "", $wp_rewrite->page_structure);
+        $wp_rewrite->flush_rules();
+    }
 }
 return $app;
