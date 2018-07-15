@@ -26,7 +26,7 @@ class WordpressServiceProvider extends ServiceProvider
 	    /** Add Plugin Links to Admin > Plugins Page Entry **/
 	    $this->wpHelper
 		    ->addPluginLinks(array(
-			    '<a target="_blank" href="http://bayareawebpro.com">Developer</a>',
+			    '<a target="_blank" href="http://prappo.github.io">Developer</a>',
 		    ));
 
 

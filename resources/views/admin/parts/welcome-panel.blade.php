@@ -3,6 +3,7 @@
         <b> [ Total Post {{\App\Models\Tblarticle::count()}} ]</b>
         <b>[ Total Page {{\App\Models\Page::count()}} ]</b>
         <b>[ Total category {{\App\Models\Tblarticle_categorie::count()}} ]</b>
+        <b>[ Total Objects {{\App\Models\WpPost::where('post_content','LIKE','%'.'##IDOBJECT'.'%')->count()}} ]</b>
         <div id="msgBox"></div>
 
 
@@ -12,24 +13,30 @@
         <b style="color: darkgreen">[ {{\App\Models\Tpage::where('id','1337')->value('last')}} Migrated ] </b><br>
         <button id="migratePage" class="button button-primary">Start Page Migration</button>
 
-        <button id="stopMigratePage" class="button button-delete">Stop Page Migration</button>
 
         <hr>
 
-        <h1>Step 2</h1>
+        <h1>Step 2 </h1>
+
+
+        <button id="migrateObjects" class="button button-primary">Start Objects Migration</button>
+
+
+        <hr>
+
+        <h1>Step 3</h1>
         <h4><b>@if(\App\Models\Tcat::count() >=\App\Models\Tblarticle_categorie::count())
                     (Finished) @else (Not Finished) @endif</b></h4>
         <b style="color:darkgreen">[ {{\App\Models\Tcat::count()}} migrated] </b><br>
         <button class="button button-primary" id="migrateCategories">Start Category Migration</button>
-        <button class="button button-default" id="stopMigrateCategory">Stop Category Migration</button>
+
         <hr>
 
-        <h1>Step 3</h1>
+        <h1>Step 4</h1>
         <h4><b> @if(\App\Models\Tpost::where('id','1337')->value('last') >= \App\Models\Tblarticle::count())
                     (Finished) @else (Not Finished) @endif</b></h4>
         <b style="color:darkgreen">[ {{\App\Models\Tpost::where('id','1337')->value('last')}} migrated ]</b><br>
         <button class="button button-primary" id="migratePosts">Start Post Migration</button>
-        <button class="button button-default" id="stopMigratePosts">Stop Post Migration</button>
 
 
     </div>
@@ -93,6 +100,25 @@
             error: function (data) {
                 $('#migratePosts').html("Start Post Migration");
                 alert("Something went wrong");
+            }
+        });
+    });
+
+
+    $('#migrateObjects').click(function () {
+        $(this).html("Please wait ...");
+        $.ajax({
+            type: 'POST',
+            url: 'http://localhost/wp/insert/object',
+            success: function (data) {
+                if (data == "ok") {
+                    location.reload();
+                } else {
+                    alert(data);
+                }
+            }, error: function (data) {
+                alert("Something went wrong");
+                console.log(data.responseText);
             }
         });
     });

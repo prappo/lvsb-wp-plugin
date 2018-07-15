@@ -8,12 +8,15 @@ use App\Models\Tblarticle_categorie;
 use App\Models\Tblarticle_linktocategorie;
 use App\Models\Tblarticle_linktotag;
 use App\Models\Tblarticle_tag;
+use App\Models\Tblobject;
 use App\Models\Tcat;
 use App\Models\Tpage;
 use App\Models\Tpost;
 use App\Models\WpPost;
+use App\Models\WpTerm;
 use App\Models\WpUser;
 use Illuminate\Http\Request;
+use Mockery\CountValidator\Exception;
 
 
 require_once('wp-load.php');
@@ -29,18 +32,63 @@ class HomeController extends Controller
 
     public function test()
     {
-        $new_post = array(
-            'post_title' => "My awesome post",
-            'post_content' => "Some cool content",
-            'post_name' => sanitize_title_with_dashes('My awesome post','','save')."_A123.html",
-            'post_status' => 'publish',
-            'post_author' => 1,
-            'post_type' => 'page'
-        );
-        $id = wp_insert_post($new_post);
-        return $id;
+
+//        $str = "This is some text
+//<p>##IDOBJECT=784##</p> and another some text
+//<p>##IDOBJECT=1509##</p>
+//<p>##LATESTARTICLESHOME=321##</p>
+//<p align=\"center\">##IDOBJECT=321##</p>";
+//        echo preg_replace_callback('/##(.*?)##/', function ($match) {
+//            return strtolower('[object ' . $match[1] . ']');
+//        }, $str);
+
+//        $data = WpPost::take(10)->where('post_content', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
+        $success = 0;
+        $error = 0;
+//        foreach ($data as $d) {
+//            try {
+//                $old_data = $d->post_content;
+//                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+//                    return strtolower('[object ' . $match[1] . ']');
+//                }, $old_data);
+//
+//                WpPost::where('ID', $d->ID)->update([
+//                    'post_content' => $new_data
+//                ]);
+//                $success++;
+//            } catch (\Exception $exception) {
+//                $error++;
+//            }
+//            echo "[" . $d->ID . "]" . " " . $d->post_content . "<br>";
+//            echo "========================== <br>";
+//
+//        }
+
+//        try {
+//            $old_content = WpPost::where('ID', 144)->value('post_content');
+//            $new_content = preg_replace_callback('/##(.*?)##/', function ($match) {
+//                return strtolower('[object ' . $match[1] . ']');
+//            }, $old_content);
+//
+//            echo $old_content . "<br>======================<be>" . $new_content;
+//            WpPost::where('ID', 144)->update([
+//                'post_content' => $new_content
+//            ]);
+//            $latest_content = WpPost::where('ID', 144)->value('post_content');
+//            echo "<br>==========================<br>";
+//            echo "<div style='color:green'>{$latest_content}</div>";
+//
+//        } catch (\Exception $exception) {
+//            return $exception->getMessage();
+//        }
+
+        Tpage::where('id','1337')->update([
+            'last'=>0
+        ]);
+        return "fuck";
 
 
+        exit;
 
 
     }
@@ -69,6 +117,7 @@ class HomeController extends Controller
                     'post_content' => $post->ARTICLE_CONTENT,
                     'post_status' => 'publish',
                     'post_author' => 1,
+                    'post_name' => sanitize_title_with_dashes($post->ARTICLE_TITLE, '', 'save') . "_A" . $post->ARTICLE_ID,
                     'post_category' => array($catId)
                 );
 
@@ -142,7 +191,7 @@ class HomeController extends Controller
 
         $last = Tpage::where('id', '1337')->first()->last;
 
-        $pages = Page::take(2000)->where('id', '>', $last)->get();
+        $pages = Page::take(100)->where('id', '>', $last)->get();
         $count = $last;
         foreach ($pages as $page) {
             $new_post = array(
@@ -150,6 +199,7 @@ class HomeController extends Controller
                 'post_content' => $page->DESCRIPTION,
                 'post_status' => 'publish',
                 'post_author' => 1,
+                'post_name' => sanitize_title_with_dashes($page->TITRE, '', 'save') . "_A" . $page->IDPAGE,
                 'post_type' => 'page'
             );
             wp_insert_post($new_post);
@@ -182,6 +232,32 @@ class HomeController extends Controller
             )
         );
         print_r($id);
+    }
+
+    public function migrateObjects(Request $request)
+    {
+
+        $data = WpPost::take(200)->where('post_content', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
+
+        foreach ($data as $d) {
+            try {
+                $old_data = $d->post_content;
+                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                    return strtolower('[object ' . $match[1] . ']');
+                }, $old_data);
+
+                WpPost::where('ID', $d->ID)->update([
+                    'post_content' => $new_data
+                ]);
+
+            } catch (\Exception $exception) {
+
+            }
+
+        }
+
+        return "ok";
+
     }
 
     public static function getCat($oldCat)

@@ -216,5 +216,58 @@ if (!$app->runningInConsole()) {
         $wp_rewrite->page_structure = str_replace(".html", "", $wp_rewrite->page_structure);
         $wp_rewrite->flush_rules();
     }
+
+    // meta data
+
+    function header_metadata()
+    {
+
+        // Post object if needed
+        // global $post;
+
+        // Page conditional if needed
+        // if( is_page() ){}
+
+        $title = get_the_title(get_the_ID());
+        $myPageDescription = \App\Models\Page::where('TITRE', $title)->value('myPageDescription');
+        $myPageKeywords = \App\Models\Page::where('TITRE', $title)->value('myPageKeywords');
+
+
+        echo '<meta name="Description" content="' . $myPageDescription . ' " />';
+        echo '<meta name="Keywords" content="' . $myPageKeywords . '" />';
+
+
+    }
+
+    add_action('wp_head', 'header_metadata');
+
+    // short code
+
+//    function test_short_code($attr)
+//    {
+//        $a = shortcode_atts(array(
+//            'idobject' => null,
+//            'email' => null,
+//        ), $attr);
+//
+////        return "Your name " . $a['name'] . " and mail is " . $a['email'];
+//        return \App\Models\Tblobject::where('IDOBJECT', $a['idobject'])->value('DESCRIPTION');
+//    }
+
+    function object_shortCode($attr)
+    {
+        $a = shortcode_atts(array(
+            'idobject' => 73,
+            'URL' => null
+        ), $attr);
+        $objectId = esc_attr($a['idobject']);
+
+        return \App\Models\Tblobject::where('IDOBJECT', $objectId)->value('DESCRIPTION');
+
+
+    }
+
+//    add_shortcode('test', 'test_short_code');
+    add_shortcode('object', 'object_shortCode');
 }
 return $app;
