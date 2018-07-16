@@ -15,7 +15,9 @@ use App\Models\Tpost;
 use App\Models\WpPost;
 use App\Models\WpTerm;
 use App\Models\WpUser;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Mockery\CountValidator\Exception;
 
 
@@ -42,9 +44,9 @@ class HomeController extends Controller
 //            return strtolower('[object ' . $match[1] . ']');
 //        }, $str);
 
-//        $data = WpPost::take(10)->where('post_content', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
-        $success = 0;
-        $error = 0;
+//        $data = WpPost::take(10)->where('post_content', 'LIKE', '%' . '##' . '%')->get();
+//        $success = 0;
+//        $error = 0;
 //        foreach ($data as $d) {
 //            try {
 //                $old_data = $d->post_content;
@@ -55,6 +57,8 @@ class HomeController extends Controller
 //                WpPost::where('ID', $d->ID)->update([
 //                    'post_content' => $new_data
 //                ]);
+//
+//
 //                $success++;
 //            } catch (\Exception $exception) {
 //                $error++;
@@ -82,11 +86,38 @@ class HomeController extends Controller
 //            return $exception->getMessage();
 //        }
 
-        Tpage::where('id','1337')->update([
-            'last'=>0
-        ]);
-        return "fuck";
+        //##RANDOMOBJECT=3023,3023,3181##
 
+//        $content = "RANDOMOBJECT=3023,3023,3181";
+//        $data = str_replace("RANDOMOBJECT=", "", $content);
+//        $results = explode(",", $data);
+//
+//        foreach ($results as $result => $object) {
+//            echo "[object idobject=" . $object . "]";
+//        }
+
+//        print_r($results);
+
+
+        global $wpdb;
+        if(!version_compare(mb_substr($wpdb->get_results( 'SELECT version() as version')[0]->version, 0, 6), '5.7.7') >= 0){
+            Schema::defaultStringLength(191);
+        }
+
+        if (!Schema::hasTable('test_table')) {
+            Schema::create('test_table', function (Blueprint $table) {
+                $table->string('id')->unique();
+                $table->unsignedInteger('user_id')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
+                $table->text('payload');
+                $table->integer('last_activity');
+            });
+        }
+
+
+
+        return "done";
 
         exit;
 
@@ -258,6 +289,40 @@ class HomeController extends Controller
 
         return "ok";
 
+    }
+
+
+    public function migrateRandomObject()
+    {
+        return "ok";
+        // sample data ##RANDOMOBJECT=3023,3023,3181##
+        $data = WpPost::take(200)->where('post_content', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+
+        foreach ($data as $d) {
+            try {
+                $old_data = $d->post_content;
+                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                    $content = $match[1];
+                    $data = str_replace("RANDOMOBJECT=", "", $content);
+                    $results = explode(",", $data);
+                    $object = "";
+                    foreach ($results as $result => $data) {
+                        $object .= strtolower('[object idobject=' . $data . ']');
+                    }
+                    return $object;
+                }, $old_data);
+
+                WpPost::where('ID', $d->ID)->update([
+                    'post_content' => $new_data
+                ]);
+
+            } catch (\Exception $exception) {
+
+            }
+
+        }
+
+        return "ok";
     }
 
     public static function getCat($oldCat)

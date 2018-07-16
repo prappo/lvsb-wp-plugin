@@ -37,7 +37,7 @@
                     (Finished) @else (Not Finished) @endif</b></h4>
         <b style="color:darkgreen">[ {{\App\Models\Tpost::where('id','1337')->value('last')}} migrated ]</b><br>
         <button class="button button-primary" id="migratePosts">Start Post Migration</button>
-
+        <button id="test">Test button</button>
 
     </div>
 
@@ -49,11 +49,28 @@
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script>
+    var URL = "{{get_site_url()}}";
+    alert(URL);
+    $('#test').click(function () {
+        $.ajax({
+            type: 'POST',
+            url: URL + '/insert/random/object',
+            data: {},
+            success: function (data) {
+                if (data == "ok") {
+                    alert("Working");
+                } else {
+                    alert(data);
+                }
+            }
+        });
+    });
+
     $('#migratePage').click(function () {
         $(this).html("Please wait ..");
         $.ajax({
             type: 'post',
-            url: 'http://localhost/wp/insert/page',
+            url: URL + '/insert/page',
             success: function (data) {
 
                 $('#msgBox').html("Success ." + data.count + " pages migrated");
@@ -73,7 +90,7 @@
         $(this).html("Please wait ...");
         $.ajax({
             type: 'POST',
-            url: 'http://localhost/wp/insert/category',
+            url: URL + '/insert/category',
             success: function (data) {
                 if (data.status == "ok") {
                     location.reload();
@@ -91,7 +108,7 @@
         $(this).html("Please Wait ..");
         $.ajax({
             type: 'POST',
-            url: 'http://localhost/wp/insert/post',
+            url: URL + '/insert/post',
             success: function (data) {
                 if (data.status == "ok") {
                     location.reload();
@@ -100,19 +117,40 @@
             error: function (data) {
                 $('#migratePosts').html("Start Post Migration");
                 alert("Something went wrong");
+                console.log(data.responseText);
+
             }
         });
     });
 
 
     $('#migrateObjects').click(function () {
+        var myPreviousText = $(this).html();
         $(this).html("Please wait ...");
+        var me = $(this);
         $.ajax({
             type: 'POST',
-            url: 'http://localhost/wp/insert/object',
+            url: URL + '/insert/object',
             success: function (data) {
                 if (data == "ok") {
-                    location.reload();
+                    me.html("Now trying to migrate random data..");
+                    $.ajax({
+                        type: 'POST',
+                        url: URL + '/insert/random/object',
+                        data: {},
+                        success: function (data) {
+                            if (data == "ok") {
+                                location.reload()
+                            } else {
+                                alert(data);
+                                me.html(myPreviousText);
+                            }
+                        },
+                        error: function (data) {
+                            alert("Something went wrong");
+                            console.log(data.responseText);
+                        }
+                    });
                 } else {
                     alert(data);
                 }

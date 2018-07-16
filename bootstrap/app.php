@@ -267,6 +267,8 @@ if (!$app->runningInConsole()) {
 
     }
 
+
+
 //    add_shortcode('test', 'test_short_code');
     add_shortcode('object', 'object_shortCode');
 }
