@@ -3,7 +3,10 @@
         <b> [ Total Post {{\App\Models\Tblarticle::count()}} ]</b>
         <b>[ Total Page {{\App\Models\Page::count()}} ]</b>
         <b>[ Total category {{\App\Models\Tblarticle_categorie::count()}} ]</b>
-        <b>[ Total Objects {{\App\Models\WpPost::where('post_content','LIKE','%'.'##IDOBJECT'.'%')->count()}} ]</b>
+        <b>[ Total Objects in
+            Post/Pages {{\App\Models\WpPost::where('post_content','LIKE','%'.'##IDOBJECT'.'%')->count()}} ]</b>
+        <b>[ Total Objects in
+            Objects {{\App\Models\Tblobject::where('DESCRIPTION','LIKE','%'.'##RANDOMOBJECT'.'%')->count()}} ]</b>
         <div id="msgBox"></div>
 
 
@@ -37,7 +40,7 @@
                     (Finished) @else (Not Finished) @endif</b></h4>
         <b style="color:darkgreen">[ {{\App\Models\Tpost::where('id','1337')->value('last')}} migrated ]</b><br>
         <button class="button button-primary" id="migratePosts">Start Post Migration</button>
-        <button id="test">Test button</button>
+
 
     </div>
 
@@ -50,21 +53,6 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script>
     var URL = "{{get_site_url()}}";
-    alert(URL);
-    $('#test').click(function () {
-        $.ajax({
-            type: 'POST',
-            url: URL + '/insert/random/object',
-            data: {},
-            success: function (data) {
-                if (data == "ok") {
-                    alert("Working");
-                } else {
-                    alert(data);
-                }
-            }
-        });
-    });
 
     $('#migratePage').click(function () {
         $(this).html("Please wait ..");
@@ -140,7 +128,18 @@
                         data: {},
                         success: function (data) {
                             if (data == "ok") {
-                                location.reload()
+                                me.html("Trying to migrate random objects in object table");
+                                $.ajax({
+                                    type: 'POST',
+                                    url: URL + '/insert/random/object/in/object',
+                                    success: function (data) {
+                                        if (data == "ok") {
+                                            location.reload();
+                                        } else {
+                                            alert(data);
+                                        }
+                                    }
+                                })
                             } else {
                                 alert(data);
                                 me.html(myPreviousText);

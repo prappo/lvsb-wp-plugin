@@ -17,6 +17,7 @@ use App\Models\WpTerm;
 use App\Models\WpUser;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Mockery\CountValidator\Exception;
 
@@ -99,25 +100,85 @@ class HomeController extends Controller
 //        print_r($results);
 
 
-        global $wpdb;
-        if(!version_compare(mb_substr($wpdb->get_results( 'SELECT version() as version')[0]->version, 0, 6), '5.7.7') >= 0){
-            Schema::defaultStringLength(191);
+//        global $wpdb;
+//        if (!version_compare(mb_substr($wpdb->get_results('SELECT version() as version')[0]->version, 0, 6), '5.7.7') >= 0) {
+//            Schema::defaultStringLength(191);
+//        }
+//
+//        if (!Schema::hasTable('test_table')) {
+//            Schema::create('test_table', function (Blueprint $table) {
+//                $table->string('id')->unique();
+//                $table->unsignedInteger('user_id')->nullable();
+//                $table->string('ip_address', 45)->nullable();
+//                $table->text('user_agent')->nullable();
+//                $table->text('payload');
+//                $table->integer('last_activity');
+//            });
+//        }
+//
+//
+//        return "done";
+
+//        $categories = Tblarticle_categorie::all();
+//        foreach ($categories as $category) {
+//            try {
+//                $cat_defaults = array(
+//
+//                    'cat_name' => $category->CATEGORY_TITLE,
+//                    'category_description' => $category->CATEGORY_TITLEEN,
+//                    'category_nicename' => '',
+//                    'category_parent' => '',
+//                    'taxonomy' => 'category'
+//                );
+//                $newId = wp_insert_category($cat_defaults);
+//                $oldId = $category->CATEGORY_ID;
+//
+//                $cat = new Tcat();
+//                $cat->new_id = $newId;
+//                $cat->old_id = $oldId;
+//                $cat->save();
+//
+//                return response()->json([
+//                    "status" => "ok"
+//                ]);
+//
+//            } catch (\Exception $exception) {
+//                echo $exception->getMessage();
+//            }
+//
+//
+//        }
+
+
+        $data = Tblobject::take(100)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+
+        foreach ($data as $d) {
+            try {
+                $old_data = $d->DESCRIPTION;
+                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                    $content = $match[1];
+                    $data = str_replace("RANDOMOBJECT=", "", $content);
+                    $results = explode(",", $data);
+                    $object = "";
+                    foreach ($results as $result => $data) {
+                        $object .= strtolower('[object idobject=' . $data . ']');
+                    }
+                    return $object;
+                }, $old_data);
+
+                DB::table('tblobjects')->where('IDOBJECT',$d->IDOBJECT)->update([
+                    'DESCRIPTION'=>$new_data
+                ]);
+
+            } catch (\Exception $exception) {
+                echo $exception->getMessage();
+            }
+
         }
 
-        if (!Schema::hasTable('test_table')) {
-            Schema::create('test_table', function (Blueprint $table) {
-                $table->string('id')->unique();
-                $table->unsignedInteger('user_id')->nullable();
-                $table->string('ip_address', 45)->nullable();
-                $table->text('user_agent')->nullable();
-                $table->text('payload');
-                $table->integer('last_activity');
-            });
-        }
+        return "ok";
 
 
-
-        return "done";
 
         exit;
 
@@ -194,15 +255,17 @@ class HomeController extends Controller
                 $cat->old_id = $oldId;
                 $cat->save();
 
-                return response()->json([
-                    "status" => "ok"
-                ]);
+
             } catch (\Exception $exception) {
 
             }
 
 
         }
+
+        return response()->json([
+            "status" => "ok"
+        ]);
 
 
     }
@@ -230,7 +293,7 @@ class HomeController extends Controller
                 'post_content' => $page->DESCRIPTION,
                 'post_status' => 'publish',
                 'post_author' => 1,
-                'post_name' => sanitize_title_with_dashes($page->TITRE, '', 'save') . "_A" . $page->IDPAGE,
+                'post_name' => sanitize_title_with_dashes($page->TITRE, '', 'save') . "_P" . $page->IDPAGE,
                 'post_type' => 'page'
             );
             wp_insert_post($new_post);
@@ -281,7 +344,7 @@ class HomeController extends Controller
                     'post_content' => $new_data
                 ]);
 
-            } catch (\Exception $exception) {
+            } catch (\Exception $exception) { 
 
             }
 
@@ -294,7 +357,6 @@ class HomeController extends Controller
 
     public function migrateRandomObject()
     {
-        return "ok";
         // sample data ##RANDOMOBJECT=3023,3023,3181##
         $data = WpPost::take(200)->where('post_content', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
 
@@ -325,6 +387,63 @@ class HomeController extends Controller
         return "ok";
     }
 
+
+    public function migrateRandomObjectsInObjects()
+    {
+        $data = Tblobject::take(100)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+
+        foreach ($data as $d) {
+            try {
+                $old_data = $d->DESCRIPTION;
+                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                    $content = $match[1];
+                    $data = str_replace("RANDOMOBJECT=", "", $content);
+                    $results = explode(",", $data);
+                    $object = "";
+                    foreach ($results as $result => $data) {
+                        $object .= strtolower('[object idobject=' . $data . ']');
+                    }
+                    return $object;
+                }, $old_data);
+
+                DB::table('tblobjects')->where('IDOBJECT',$d->IDOBJECT)->update([
+                    'DESCRIPTION'=>$new_data
+                ]);
+
+            } catch (\Exception $exception) {
+//                echo $exception->getMessage();
+            }
+
+        }
+
+        return "ok";
+    }
+
+
+    public function migrateObjectsToShortCode()
+    {
+        $data = Tblobject::take(200)->where('DESCRIPTION', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
+
+        foreach ($data as $d) {
+            try {
+                $old_data = $d->post_content;
+                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                    return strtolower('[object ' . $match[1] . ']');
+                }, $old_data);
+
+                WpPost::where('ID', $d->ID)->update([
+                    'post_content' => $new_data
+                ]);
+
+            } catch (\Exception $exception) {
+
+            }
+
+        }
+
+        return "ok";
+    }
+
     public static function getCat($oldCat)
     {
         return Tcat::where('old_id', $oldCat)->value('new_id');
@@ -334,6 +453,11 @@ class HomeController extends Controller
     {
         $tagId = Tblarticle_linktotag::where('ARTICLE_ID', $oldPostId)->value('TAG_ID');
         return Tblarticle_tag::where('TAG_ID', $tagId)->value('TAG_KEYWORD');
+    }
+
+    public function reset()
+    {
+
     }
 
 
