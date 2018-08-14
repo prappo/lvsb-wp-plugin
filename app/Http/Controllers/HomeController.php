@@ -150,34 +150,38 @@ class HomeController extends Controller
 //        }
 
 
-        $data = Tblobject::take(100)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+//        $data = Tblobject::take(100)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+//
+//        foreach ($data as $d) {
+//            try {
+//                $old_data = $d->DESCRIPTION;
+//                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+//                    $content = $match[1];
+//                    $data = str_replace("RANDOMOBJECT=", "", $content);
+//                    $results = explode(",", $data);
+//                    $object = "";
+//                    foreach ($results as $result => $data) {
+//                        $object .= strtolower('[object idobject=' . $data . ']');
+//                    }
+//                    return $object;
+//                }, $old_data);
+//
+//                DB::table('tblobjects')->where('IDOBJECT', $d->IDOBJECT)->update([
+//                    'DESCRIPTION' => $new_data
+//                ]);
+//
+//            } catch (\Exception $exception) {
+//                echo $exception->getMessage();
+//            }
+//
+//        }
+//
+//        return "ok";
 
-        foreach ($data as $d) {
-            try {
-                $old_data = $d->DESCRIPTION;
-                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
-                    $content = $match[1];
-                    $data = str_replace("RANDOMOBJECT=", "", $content);
-                    $results = explode(",", $data);
-                    $object = "";
-                    foreach ($results as $result => $data) {
-                        $object .= strtolower('[object idobject=' . $data . ']');
-                    }
-                    return $object;
-                }, $old_data);
+        //2488
 
-                DB::table('tblobjects')->where('IDOBJECT',$d->IDOBJECT)->update([
-                    'DESCRIPTION'=>$new_data
-                ]);
-
-            } catch (\Exception $exception) {
-                echo $exception->getMessage();
-            }
-
-        }
-
-        return "ok";
-
+        $tags = get_the_tags(2488);
+        print_r($tags);
 
 
         exit;
@@ -197,13 +201,16 @@ class HomeController extends Controller
         $count = $last;
 
         foreach ($posts as $post) {
+
             try {
                 // Create post object
                 $oldCatId = Tblarticle_linktocategorie::where('ARTICLE_ID', $post->ARTICLE_ID)->value('CATEGORY_ID');
                 $catId = self::getCat($oldCatId);
+
                 if ($catId == "") {
                     $catId = 1;
                 }
+
                 $my_post = array(
                     'post_title' => $post->ARTICLE_TITLE,
                     'post_content' => $post->ARTICLE_CONTENT,
@@ -232,6 +239,12 @@ class HomeController extends Controller
         ]);
 
 
+    }
+
+    public static function getTag($oldPostId)
+    {
+        $tagId = Tblarticle_linktotag::where('ARTICLE_ID', $oldPostId)->value('TAG_ID');
+        return Tblarticle_tag::where('TAG_ID', $tagId)->value('TAG_KEYWORD');
     }
 
     public function insertCategory()
@@ -336,7 +349,7 @@ class HomeController extends Controller
         foreach ($data as $d) {
             try {
                 $old_data = $d->post_content;
-                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                $new_data = preg_replace_callback('/##IDOBJECT(.*?)##/', function ($match) {
                     return strtolower('[object ' . $match[1] . ']');
                 }, $old_data);
 
@@ -344,7 +357,7 @@ class HomeController extends Controller
                     'post_content' => $new_data
                 ]);
 
-            } catch (\Exception $exception) { 
+            } catch (\Exception $exception) {
 
             }
 
@@ -401,13 +414,15 @@ class HomeController extends Controller
                     $results = explode(",", $data);
                     $object = "";
                     foreach ($results as $result => $data) {
-                        $object .= strtolower('[object idobject=' . $data . ']');
+
+                        $object .= Tblobject::where('IDOBJECT', $data)->value('DESCRIPTION') . "<br>";
+
                     }
                     return $object;
                 }, $old_data);
 
-                DB::table('tblobjects')->where('IDOBJECT',$d->IDOBJECT)->update([
-                    'DESCRIPTION'=>$new_data
+                DB::table('tblobjects')->where('IDOBJECT', $d->IDOBJECT)->update([
+                    'DESCRIPTION' => $new_data
                 ]);
 
             } catch (\Exception $exception) {
@@ -449,11 +464,6 @@ class HomeController extends Controller
         return Tcat::where('old_id', $oldCat)->value('new_id');
     }
 
-    public static function getTag($oldPostId)
-    {
-        $tagId = Tblarticle_linktotag::where('ARTICLE_ID', $oldPostId)->value('TAG_ID');
-        return Tblarticle_tag::where('TAG_ID', $tagId)->value('TAG_KEYWORD');
-    }
 
     public function reset()
     {

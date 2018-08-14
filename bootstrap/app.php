@@ -229,8 +229,21 @@ if (!$app->runningInConsole()) {
         // if( is_page() ){}
 
         $title = get_the_title(get_the_ID());
-        $myPageDescription = \App\Models\Page::where('TITRE', $title)->value('myPageDescription');
-        $myPageKeywords = \App\Models\Page::where('TITRE', $title)->value('myPageKeywords');
+
+
+        $content = \App\Models\WpPost::where('ID', get_the_ID())->value('post_content');
+        $start = strpos($content, '<p>');
+        $end = strpos($content, '</p>', $start);
+        $paragraph = substr($content, $start, $end - $start + 4);
+        $metaDescription = html_entity_decode(strip_tags($paragraph));
+
+
+        $myPageDescription = $metaDescription;
+        $tags = get_the_tags(get_the_ID());
+        $myPageKeywords = "";
+        foreach ($tags as $no => $tag) {
+            $myPageKeywords .= $tag->name;
+        }
 
 
         echo '<meta name="Description" content="' . $myPageDescription . ' " />';
@@ -266,7 +279,6 @@ if (!$app->runningInConsole()) {
 
 
     }
-
 
 
 //    add_shortcode('test', 'test_short_code');

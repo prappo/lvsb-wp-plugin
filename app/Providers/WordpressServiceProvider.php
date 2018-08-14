@@ -73,7 +73,7 @@ class WordpressServiceProvider extends ServiceProvider
 			    function ($parameters, $content){
 				    return $this->app->call( '\App\Http\Controllers\Auth\LoginShortcodeController@template', compact('parameters', 'content'));
 			    }
-		    );
+		    )
 
 
 	    /** Add MetaBoxes **/
@@ -102,6 +102,31 @@ class WordpressServiceProvider extends ServiceProvider
 //			    10,
 //			    3
 //		    );
+//
+		    ->addMetaBox(
+			    'lvsb_meta_box',
+			    'LVSB Option',
+			    function ($post, $metabox_attributes){
+				    $this->lumenHelper
+					    ->response($this->app->call( '\App\Http\Controllers\MetaController@template', compact('post', 'metabox_attributes')))
+					    ->sendContent();
+			    },
+			    'post',
+			    'normal',
+			    'default',
+			    2
+		    )
+		    ->addAction(
+			    'save_post',
+			    function ($post_id, $post, $update){
+				    if($post->post_type == 'post') {
+					    $this->app->make('cache')->flush();
+					    $this->app->call('\App\Http\Controllers\MetaController@save', compact( 'post_id', 'post', 'update' ));
+				    }
+			    },
+			    10,
+			    3
+		    );
 
 
 //	    /** Add Nav Menu MetaBoxes **/
