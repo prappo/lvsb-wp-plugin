@@ -1,42 +1,46 @@
 <?php namespace App\Providers;
+
 use Illuminate\Support\ServiceProvider;
+
 class WordpressServiceProvider extends ServiceProvider
 {
 
-	/** @var \App\Helpers\LumenHelper $lumenHelper **/
-	/** @var \App\Helpers\WpHelper $wpHelper **/
+    /** @var \App\Helpers\LumenHelper $lumenHelper * */
+    /** @var \App\Helpers\WpHelper $wpHelper * */
 
-	private $wpHelper, $lumenHelper, $absolutePath;
+    private $wpHelper, $lumenHelper, $absolutePath;
 
-	/**
-	 * WordpressServiceProvider constructor.
-	 * @param $app \Illuminate\Contracts\Foundation\Application
-	 */
-	public function __construct( $app ) {
-		parent::__construct( $app );
-		$this->lumenHelper = $this->app->make('lumenHelper');
-		$this->wpHelper = $this->lumenHelper->wpHelper();
-	}
+    /**
+     * WordpressServiceProvider constructor.
+     * @param $app \Illuminate\Contracts\Foundation\Application
+     */
+    public function __construct($app)
+    {
+        parent::__construct($app);
+        $this->lumenHelper = $this->app->make('lumenHelper');
+        $this->wpHelper = $this->lumenHelper->wpHelper();
+    }
 
-	/**
+    /**
      * Register any application services.
      * @return void
      */
-    public function register(){
-	    /** Add Plugin Links to Admin > Plugins Page Entry **/
-	    $this->wpHelper
-		    ->addPluginLinks(array(
-			    '<a target="_blank" href="http://prappo.github.io">Developer</a>',
-		    ));
+    public function register()
+    {
+        /** Add Plugin Links to Admin > Plugins Page Entry **/
+        $this->wpHelper
+            ->addPluginLinks(array(
+                '<a target="_blank" href="http://prappo.github.io">Developer</a>',
+            ));
 
 
-	    /** Add FrontEnd Widget **/
-	    $this->wpHelper
-		    ->addWidget(
-			    \App\Widgets\ExampleFrontEndWidget::class
-		    );
+        /** Add FrontEnd Widget **/
+        $this->wpHelper
+            ->addWidget(
+                \App\Widgets\ExampleFrontEndWidget::class
+            );
 
-	    /** Add Admin Bar Nodes **/
+        /** Add Admin Bar Nodes **/
 //	    $this->wpHelper
 //		    ->addAdminBarNode(
 //			    false,
@@ -60,23 +64,21 @@ class WordpressServiceProvider extends ServiceProvider
 //			    '#'
 //		    );
 
-	    /** Add Shortcodes **/
-	    $this->wpHelper
-		    ->addShortcode(
-			    'auth_register',
-			    function ($parameters, $content){
-				    return $this->app->call( '\App\Http\Controllers\Auth\RegisterShortcodeController@template', compact('parameters', 'content'));
-			    }
-		    )
-		    ->addShortcode(
-			    'auth_login',
-			    function ($parameters, $content){
-				    return $this->app->call( '\App\Http\Controllers\Auth\LoginShortcodeController@template', compact('parameters', 'content'));
-			    }
-		    )
-
-
-	    /** Add MetaBoxes **/
+        /** Add Shortcodes **/
+        $this->wpHelper
+            ->addShortcode(
+                'auth_register',
+                function ($parameters, $content) {
+                    return $this->app->call('\App\Http\Controllers\Auth\RegisterShortcodeController@template', compact('parameters', 'content'));
+                }
+            )
+            ->addShortcode(
+                'auth_login',
+                function ($parameters, $content) {
+                    return $this->app->call('\App\Http\Controllers\Auth\LoginShortcodeController@template', compact('parameters', 'content'));
+                }
+            )
+            /** Add MetaBoxes **/
 
 //		    ->addMetaBox(
 //			    'example_meta_box',
@@ -103,30 +105,30 @@ class WordpressServiceProvider extends ServiceProvider
 //			    3
 //		    );
 //
-		    ->addMetaBox(
-			    'lvsb_meta_box',
-			    'LVSB Option',
-			    function ($post, $metabox_attributes){
-				    $this->lumenHelper
-					    ->response($this->app->call( '\App\Http\Controllers\MetaController@template', compact('post', 'metabox_attributes')))
-					    ->sendContent();
-			    },
-			    'post',
-			    'normal',
-			    'default',
-			    2
-		    )
-		    ->addAction(
-			    'save_post',
-			    function ($post_id, $post, $update){
-				    if($post->post_type == 'post') {
-					    $this->app->make('cache')->flush();
-					    $this->app->call('\App\Http\Controllers\MetaController@save', compact( 'post_id', 'post', 'update' ));
-				    }
-			    },
-			    10,
-			    3
-		    );
+            ->addMetaBox(
+                'lvsb_meta_box',
+                'LVSB Option',
+                function ($post, $metabox_attributes) {
+                    $this->lumenHelper
+                        ->response($this->app->call('\App\Http\Controllers\MetaController@template', compact('post', 'metabox_attributes')))
+                        ->sendContent();
+                },
+                'post',
+                'normal',
+                'default',
+                2
+            )
+            ->addAction(
+                'save_post',
+                function ($post_id, $post, $update) {
+                    if ($post->post_type == 'post') {
+                        $this->app->make('cache')->flush();
+                        $this->app->call('\App\Http\Controllers\MetaController@save', compact('post_id', 'post', 'update'));
+                    }
+                },
+                10,
+                3
+            );
 
 
 //	    /** Add Nav Menu MetaBoxes **/
@@ -145,32 +147,40 @@ class WordpressServiceProvider extends ServiceProvider
 //	    );
 
 
+        /** Add Dashboard Widget **/
+        $this->wpHelper
+            ->addDashboardWidget(
+                'example_admin_widget',
+                'Example Admin Widget',
+                function () {
+                    $this->lumenHelper
+                        ->response($this->app->call('\App\Widgets\ExampleAdminWidget@template'))
+                        ->sendContent();
+                }
+            );
 
-	    /** Add Dashboard Widget **/
-	    $this->wpHelper
-		    ->addDashboardWidget(
-			    'example_admin_widget',
-			    'Example Admin Widget',
-			    function(){
-				    $this->lumenHelper
-					    ->response($this->app->call( '\App\Widgets\ExampleAdminWidget@template'))
-					    ->sendContent();
-			    }
-		    );
+        /** Add Dashboard Panels **/
+        $this->wpHelper
+            ->addAdminPanel(
+                'converter',
+                'Converter',
+                'Converter',
+                function () {
+                    $this->lumenHelper
+                        ->response($this->lumenHelper->view('admin-intro'))
+                        ->sendContent();
+                },
+                'read'
+            )
+            ->addAdminPanel('lvsb',
+                'LVSB',
+                'LVSB',
+                function () {
+                    $this->lumenHelper->response($this->lumenHelper->view('main'))
+                        ->sendContent();
 
-	    /** Add Dashboard Panels **/
-	    $this->wpHelper
-		    ->addAdminPanel(
-			    'converter',
-			    'Converter',
-			    'Converter',
-			    function(){
-				    $this->lumenHelper
-					    ->response($this->lumenHelper->view('admin-intro'))
-					    ->sendContent();
-			    },
-			    'read'
-		    );
+                },
+                'read');
 //		    ->addAdminSubPanel(
 //			    'lumen_page',
 //			    'lumen_sub_page',
@@ -185,30 +195,30 @@ class WordpressServiceProvider extends ServiceProvider
 //		    );
 
 
-	    /** Add CSS & Scripts **/
-	    $this->wpHelper
-		    ->enqueueStyle(
-			    'lumen',
-			    $this->lumenHelper->asset('resources/assets/build/example.css'),
-			    array(),
-			    '1.0.0',
-			    'all'
-		    )
-		    ->enqueueScript(
-			    'lumen',
-			    $this->lumenHelper->asset('resources/assets/build/example.js'),
-			    array('jquery'),
-			    '1.0.0',
-			    true
-		    );
+        /** Add CSS & Scripts **/
+        $this->wpHelper
+            ->enqueueStyle(
+                'lumen',
+                $this->lumenHelper->asset('resources/assets/build/example.css'),
+                array(),
+                '1.0.0',
+                'all'
+            )
+            ->enqueueScript(
+                'lumen',
+                $this->lumenHelper->asset('resources/assets/build/example.js'),
+                array('jquery'),
+                '1.0.0',
+                true
+            );
 
     }
 
-	/**
-	 * Boot the service providers
-	 */
-	public function boot(){
-
+    /**
+     * Boot the service providers
+     */
+    public function boot()
+    {
 
 
     }

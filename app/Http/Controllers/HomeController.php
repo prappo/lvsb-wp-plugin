@@ -10,6 +10,7 @@ use App\Models\Tblarticle_linktotag;
 use App\Models\Tblarticle_tag;
 use App\Models\Tblobject;
 use App\Models\Tcat;
+use App\Models\Tobject;
 use App\Models\Tpage;
 use App\Models\Tpost;
 use App\Models\WpPost;
@@ -180,8 +181,35 @@ class HomeController extends Controller
 
         //2488
 
-        $tags = get_the_tags(2488);
-        print_r($tags);
+//        $tags = get_the_tags(2488);
+//        $myPost = get_post_meta(2488, 'lvsb_option');
+//        print_r($myPost[0]);
+
+        try {
+            Tcat::truncate();
+            echo "Tcat table truncated <br>";
+//            Tobject::where('id', '1337')->update([
+//                'last' => 0
+//            ]);
+            echo "Tobject table reset done <br>";
+            Tpage::where('id', 1337)->update([
+                'last' => 0
+            ]);
+            echo "Tpage table reset done <br>";
+            Tpost::where('id', '1337')->update([
+                'last' => 0
+            ]);
+            echo "Tpost table rest done<br>";
+
+            WpPost::truncate();
+            echo "All Wp Post removed";
+
+            return "Operation done";
+
+
+        } catch (\Exception $exception) {
+            return $exception->getMessage();
+        }
 
 
         exit;
@@ -191,14 +219,17 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
-        return "You said : " . $request->data;
+        Tblarticle::take(700)->delete();
+        exit;
     }
 
     public function insertPost()
     {
+
         $last = Tpost::where('id', '1337')->value('last');
-        $posts = Tblarticle::take(2000)->where('id', '>', $last)->get();
+        $posts = Tblarticle::take(300)->where('id', '>', $last)->get();
         $count = $last;
+        $c = 0;
 
         foreach ($posts as $post) {
 
@@ -221,21 +252,31 @@ class HomeController extends Controller
                 );
 
 
-                $id = wp_insert_post($my_post);
-                wp_set_post_tags($id, self::getTag($post->ARTICLE_ID), true);
+                $id = wp_insert_post($my_post); // wp post id
+
+                foreach (Tblarticle_linktotag::where('ARTICLE_ID', $post->ARTICLE_ID)->get() as $tag) {
+                    wp_set_post_tags($id, self::getTag($post->ARTICLE_ID), true);
+                }
+
                 $count++;
+                $c++;
 
 
             } catch (\Exception $exception) {
                 echo $exception->getMessage();
             }
         }
+
+        $updatePostCount = get_option('lvsb_posts') + $c;
+        update_option('lvsb_posts', $updatePostCount);
+
         Tpost::where('id', '1337')->update([
             'last' => $count
         ]);
 
         return response()->json([
-            'status' => 'ok'
+            'status' => 'ok',
+            'count' => $updatePostCount
         ]);
 
 
@@ -247,8 +288,24 @@ class HomeController extends Controller
         return Tblarticle_tag::where('TAG_ID', $tagId)->value('TAG_KEYWORD');
     }
 
+    public function set()
+    {
+
+        update_option('lvsb_pages', 0);
+        echo "Lvsb pages : " . get_option('lvsb_pages') . "<br>";
+        update_option('lvsb_posts', 0);
+        echo "Lvsb posts : " . get_option('lvsb_posts') . "<br>";
+        update_option('lvsb_categories', 0);
+        echo "Lvsb pages : " . get_option('lvsb_categories') . "<br>";
+        update_option('lvsb_objects', 0);
+        echo "Lvsb objects : " . get_option('lvsb_objects') . "<br>";
+        update_option('lvsb_set', 'yes');
+        exit;
+    }
+
     public function insertCategory()
     {
+        $count = 0;
         $categories = Tblarticle_categorie::all();
         foreach ($categories as $category) {
             try {
@@ -267,6 +324,7 @@ class HomeController extends Controller
                 $cat->new_id = $newId;
                 $cat->old_id = $oldId;
                 $cat->save();
+                $count++;
 
 
             } catch (\Exception $exception) {
@@ -275,6 +333,11 @@ class HomeController extends Controller
 
 
         }
+
+        $updateCatCount = get_option('lvsb_categories') + $count;
+
+        update_option('lvsb_categories', $updateCatCount);
+
 
         return response()->json([
             "status" => "ok"
@@ -298,9 +361,15 @@ class HomeController extends Controller
 
         $last = Tpage::where('id', '1337')->first()->last;
 
-        $pages = Page::take(100)->where('id', '>', $last)->get();
+        $pages = Page::take(300)->where('id', '>', $last)->get();
         $count = $last;
+
+        if (!get_option('lvsb_pages')) {
+            update_option('lvsb_pages', 0);
+        }
+        $c = 0;
         foreach ($pages as $page) {
+
             $new_post = array(
                 'post_title' => $page->TITRE,
                 'post_content' => $page->DESCRIPTION,
@@ -311,15 +380,22 @@ class HomeController extends Controller
             );
             wp_insert_post($new_post);
             $count++;
+            $c++;
+
+
         }
+
+        $totalMigrated = get_option('lvsb_pages') + $c;
+        update_option('lvsb_pages', $totalMigrated);
+
 
         $newLast = $last + $count;
         Tpage::where('id', '1337')->update([
-            'last' => $count
+            'last' => $newLast
         ]);
 
         return response()->json([
-            'count' => $newLast
+            'count' => $totalMigrated
         ]);
 
 
@@ -350,7 +426,7 @@ class HomeController extends Controller
             try {
                 $old_data = $d->post_content;
                 $new_data = preg_replace_callback('/##IDOBJECT(.*?)##/', function ($match) {
-                    return strtolower('[object ' . $match[1] . ']');
+                    return strtolower('[object idobject' . $match[1] . ']');
                 }, $old_data);
 
                 WpPost::where('ID', $d->ID)->update([
@@ -370,7 +446,7 @@ class HomeController extends Controller
 
     public function migrateRandomObject()
     {
-        // sample data ##RANDOMOBJECT=3023,3023,3181##
+//         sample data ##RANDOMOBJECT=3023,3023,3181##
         $data = WpPost::take(200)->where('post_content', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
 
         foreach ($data as $d) {
@@ -403,10 +479,10 @@ class HomeController extends Controller
 
     public function migrateRandomObjectsInObjects()
     {
-        $data = Tblobject::take(100)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+        $data = Tblobject::take(200)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
+        try {
+            foreach ($data as $d) {
 
-        foreach ($data as $d) {
-            try {
                 $old_data = $d->DESCRIPTION;
                 $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
                     $content = $match[1];
@@ -414,9 +490,7 @@ class HomeController extends Controller
                     $results = explode(",", $data);
                     $object = "";
                     foreach ($results as $result => $data) {
-
                         $object .= Tblobject::where('IDOBJECT', $data)->value('DESCRIPTION') . "<br>";
-
                     }
                     return $object;
                 }, $old_data);
@@ -425,13 +499,15 @@ class HomeController extends Controller
                     'DESCRIPTION' => $new_data
                 ]);
 
-            } catch (\Exception $exception) {
-//                echo $exception->getMessage();
+
             }
 
+            return "ok";
+        } catch (\Exception $exception) {
+            return $exception->getMessage();
         }
 
-        return "ok";
+
     }
 
 
@@ -440,24 +516,27 @@ class HomeController extends Controller
         $data = Tblobject::take(200)->where('DESCRIPTION', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
 
         foreach ($data as $d) {
-            try {
-                $old_data = $d->post_content;
-                $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
-                    return strtolower('[object ' . $match[1] . ']');
-                }, $old_data);
+            $old_data = $d->DESCRIPTION;
+            $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
+                $content = $match[1];
+                $data = str_replace("IDOBJECT=", "", $content);
+                $results = explode(",", $data);
+                $object = "";
+                foreach ($results as $result => $data) {
+                    $object .= Tblobject::where('IDOBJECT', $data)->value('DESCRIPTION') . "<br>";
+                }
+                return $object;
+            }, $old_data);
 
-                WpPost::where('ID', $d->ID)->update([
-                    'post_content' => $new_data
-                ]);
-
-            } catch (\Exception $exception) {
-
-            }
+            DB::table('tblobjects')->where('IDOBJECT', $d->IDOBJECT)->update([
+                'DESCRIPTION' => $new_data
+            ]);
 
         }
 
         return "ok";
     }
+
 
     public static function getCat($oldCat)
     {
@@ -467,7 +546,47 @@ class HomeController extends Controller
 
     public function reset()
     {
+        try {
+            Tcat::truncate();
+            echo "Tcat table truncated <br>";
+            Tobject::where('id', '1337')->update([
+                'last' => 0
+            ]);
+            echo "Tobject table reset done <br>";
+            Tpage::where('id', 1337)->update([
+                'last' => 0
+            ]);
+            echo "Tpage table reset done <br>";
+            Tpost::where('id', '1337')->update([
+                'last' => 0
+            ]);
+            echo "Tpost table rest done<br>";
 
+            WpPost::truncate();
+            echo "All Wp Post removed";
+
+            return "Operation done";
+
+
+        } catch (\Exception $exception) {
+            return $exception->getMessage();
+        }
+    }
+
+    public function fire()
+    {
+        if (get_option('lvsb_status')) {
+            if (get_option('lvsb_status') == "running") {
+                update_option('lvsb_status', 'stop');
+                return "success";
+            } else {
+                update_option('lvsb_status', 'running');
+                return "success";
+            }
+        } else {
+            update_option('lvsb_status', 'running');
+            return "success";
+        }
     }
 
 

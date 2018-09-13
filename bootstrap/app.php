@@ -223,31 +223,39 @@ if (!$app->runningInConsole()) {
     {
 
         // Post object if needed
-        // global $post;
+//        global $post;
 
         // Page conditional if needed
         // if( is_page() ){}
 
-        $title = get_the_title(get_the_ID());
+
+        $metaOption = get_post_meta(get_the_ID(), 'lvsb_option');
+
+        if(isset($metaOption[0])){
+            if ($metaOption[0] != "no") {
+                $content = \App\Models\WpPost::where('ID', get_the_ID())->value('post_content');
+                $start = strpos($content, '<p>');
+                $end = strpos($content, '</p>', $start);
+                $paragraph = substr($content, $start, $end - $start + 4);
+                $metaDescription = html_entity_decode(strip_tags($paragraph));
 
 
-        $content = \App\Models\WpPost::where('ID', get_the_ID())->value('post_content');
-        $start = strpos($content, '<p>');
-        $end = strpos($content, '</p>', $start);
-        $paragraph = substr($content, $start, $end - $start + 4);
-        $metaDescription = html_entity_decode(strip_tags($paragraph));
+                $myPageDescription = $metaDescription;
+                $tags = get_the_tags(get_the_ID());
+                $myPageKeywords = "";
+                foreach ($tags as $no => $tag) {
+                    $myPageKeywords .= $tag->name;
+                }
 
 
-        $myPageDescription = $metaDescription;
-        $tags = get_the_tags(get_the_ID());
-        $myPageKeywords = "";
-        foreach ($tags as $no => $tag) {
-            $myPageKeywords .= $tag->name;
+                echo '<meta name="Description" content="' . $myPageDescription . ' " />';
+                echo '<meta name="Keywords" content="' . $myPageKeywords . '" />';
+
+
+            }
         }
 
 
-        echo '<meta name="Description" content="' . $myPageDescription . ' " />';
-        echo '<meta name="Keywords" content="' . $myPageKeywords . '" />';
 
 
     }
@@ -283,5 +291,13 @@ if (!$app->runningInConsole()) {
 
 //    add_shortcode('test', 'test_short_code');
     add_shortcode('object', 'object_shortCode');
+
+
+    function remove_footer_admin()
+    {
+
+    }
+
+    add_filter('admin_footer_text', 'remove_footer_admin');
 }
 return $app;
