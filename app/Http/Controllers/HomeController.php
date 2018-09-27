@@ -225,7 +225,7 @@ class HomeController extends Controller
 
     public function insertPost()
     {
-        $limit = 300;
+        $limit = 1000;
         if (Tblarticle::all()->count() == 0) {
             return "done";
         }

@@ -21,10 +21,10 @@
             <span style="color:yellow">*Categories Migration Pending</span><br>
         @endif
 
-        @if(\App\Models\Tblarticle::all()->count() == get_option('lvsb_posts'))
+        @if(\App\Models\Tblarticle::all()->count() == 0)
             *Article Migration done<br>
         @else
-            <span style="color:yellow"> *Article Migration pending . Migrated {{get_option('lvsb_posts')}}
+            <span style="color:yellow"> *Article Migration pending .  {{\App\Models\Tblarticle::all()->count()}}
                 articles</span><br>
         @endif
 
@@ -94,7 +94,7 @@
 
 
         var totalPost = "{{\App\Models\Tblarticle::count()}}";
-        var migratedPosts = "{{get_option('lvsb_posts')}}";
+
 
         var totalCategory = "{{\App\Models\Tblarticle_categorie::count()}}";
         var migratedCategory = "{{get_option('lvsb_categories')}}";
@@ -324,6 +324,7 @@
                 if (data.status == "ok") {
                     var d = new Date();
                     $('#msgBox').html(data.count + " article Migrated [ " + d + " ] ");
+                    insertPage();
 
                 }
             },
