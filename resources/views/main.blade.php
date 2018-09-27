@@ -2,14 +2,15 @@
 
     <br>
     @if(get_option('lvsb_status') == "running")
-        <img src="http://www.angelfire.com/super/badwebs/3-AsciiGuy-Matrix.gif">
+
     @endif
     <br>
     <h4 style="color:#65AA52">
-        @if(\App\Models\Page::all()->count() == get_option('lvsb_pages'))
+        @if(\App\Models\Page::all()->count() == 0)
             *Page Migration done <br>
         @else
-            <span style="color: yellow">*Page Migration pending </span><br>
+            <span style="color: yellow">*Page Migration pending ( {{\App\Models\Page::all()->count()}}
+                Remaining ) </span><br>
         @endif
 
 
@@ -23,7 +24,27 @@
         @if(\App\Models\Tblarticle::all()->count() == get_option('lvsb_posts'))
             *Article Migration done<br>
         @else
-            <span style="color:yellow"> *Article Migration pending . Migrated {{get_option('lvsb_posts')}} articles</span><br>
+            <span style="color:yellow"> *Article Migration pending . Migrated {{get_option('lvsb_posts')}}
+                articles</span><br>
+        @endif
+
+        @if(\App\Models\WpPost::where('post_content','LIKE','%'.'##IDOBJECT'.'%')->count() == 0)
+            *Object migration <br>
+        @else
+
+            <span style="color:yellow">*Object migration pending ( {{\App\Models\WpPost::where('post_content','LIKE','%'.'##IDOBJECT'.'%')->count()}}
+                )</span>
+            <br>
+
+        @endif
+
+
+        @if(\App\Models\WpPost::where('post_content','LIKE','%'.'##RANDOMOBJECT'.'%')->count() == 0)
+            *Random objects migration <br>
+        @else
+            <span style="color:yellow">*Random object migratin pending ( {{ \App\Models\WpPost::where('post_content','LIKE','%'.'##RANDOMOBJECT'.'%')->count() }}
+                )</span><br>
+
         @endif
     </h4>
 
@@ -70,7 +91,6 @@
     function fuck() {
 
         var totalPage = "{{\App\Models\Page::count()}}";
-        var migratedPage = "{{get_option('lvsb_pages')}}";
 
 
         var totalPost = "{{\App\Models\Tblarticle::count()}}";
@@ -79,20 +99,34 @@
         var totalCategory = "{{\App\Models\Tblarticle_categorie::count()}}";
         var migratedCategory = "{{get_option('lvsb_categories')}}";
 
-        var totalObjectInPost = "{{}}";
+        var totalObjectInPost = "{{\App\Models\WpPost::where('post_content','LIKE','%'.'##IDOBJECT'.'%')->count()}}";
 
-        if (totalPage != migratedPage) {
-            $('#msgBox').html("Running Page Migration .... <br><img height='50' width='50' src='https://www.createwebsite.net/wp-content/uploads/2015/09/GD.gif'>");
-            $('#msgBox').html("Total page " + totalPage + " and migrated " + migratedPage);
+
+        var totalRandomObjects = "{{\App\Models\WpPost::where('post_content','LIKE','%'.'##RANDOMOBJECT'.'%')->count()}}";
+
+
+        var totalObjectsInObjects = "{{\App\Models\Tblobject::where('DESCRIPTION','LIKE','%'.'##IDOBJECT'.'%')->count()}}";
+
+        var totalRandomObjectsInObject = "{{\App\Models\Tblobject::where('DESCRIPTION','LIKE','%'.'##RANDOMOBJECT'.'%')->count()}}";
+
+
+        if (totalPage != 0) {
+
+
             $.ajax({
                 type: 'post',
                 url: URL + '/insert/page',
                 success: function (data) {
+                    if (data == "done") {
+                        location.reload();
+                    }
 
-                    $('#msgBox').html("Success ." + data.count + " pages migrated");
+                    var d = new Date();
+
+                    $('#msgBox').html("Success ." + data.count + " pages migrated " + " [ " + d + " ] ");
 
 
-                    location.reload();
+                    insertPage();
                 }, error: function (data) {
                     $('#msgBox').html(data.responseText);
                 }
@@ -116,29 +150,119 @@
                 }
             });
         }
-        else if (totalPost != migratedPosts) {
+        else if (totalPost != 0) {
 
-                $('#msgBox').html("Now running article migration . Please wait .... <br><img height='50' width='50' src='https://www.createwebsite.net/wp-content/uploads/2015/09/GD.gif'>");
-                $.ajax({
-                    type: 'POST',
-                    url: URL + '/insert/post',
-                    success: function (data) {
-                        if (data.status == "ok") {
-                            $('#msgBox').html(data.count + " article Migrated ");
-                            location.reload();
-                        }
-                    },
-                    error: function (data) {
-                        $('#migratePosts').html("Start Post Migration");
-                        $('#msgBox').html("Something went wrong");
-                        console.log(data.responseText);
+            $('#msgBox').html("Now running article migration . Please wait .... <br><img height='50' width='50' src='https://www.createwebsite.net/wp-content/uploads/2015/09/GD.gif'>");
+            $.ajax({
+                type: 'POST',
+                url: URL + '/insert/post',
+                success: function (data) {
+                    if (data == "done") {
+                        location.reload();
+                    }
+
+                    if (data.status == "ok") {
+                        var d = new Date();
+                        $('#msgBox').html(data.count + " article Migrated [ " + d + " ] ");
+
+                        insertPost();
 
                     }
-                });
+                },
+                error: function (data) {
+                    $('#migratePosts').html("Start Post Migration");
+                    $('#msgBox').html("Something went wrong");
+                    console.log(data.responseText);
+
+                }
+            });
 
 
         }
-        else{
+
+        else if (totalObjectInPost != 0) {
+
+            $('#msgBox').html("Running Object Migration .... <br><img height='50' width='50' src='https://www.createwebsite.net/wp-content/uploads/2015/09/GD.gif'>");
+            $.ajax({
+                type: 'POST',
+                url: URL + '/insert/object',
+                success: function (data) {
+                    if (data == "ok") {
+                        location.reload();
+
+                    } else {
+                        $('#msgBox').html(data);
+                        location.reload();
+                    }
+                }, error: function (data) {
+                    $('#msgBox').html("Something went wrong");
+                    console.log(data.responseText);
+                }
+            });
+        }
+
+        else if (totalRandomObjects != 0) {
+            $('#msgBox').html("Running Random object Migration .... <br><img height='50' width='50' src='https://www.createwebsite.net/wp-content/uploads/2015/09/GD.gif'>");
+            $.ajax({
+                type: 'POST',
+                url: URL + '/insert/random/object',
+                data: {},
+                success: function (data) {
+                    if (data == "ok") {
+                        location.reload();
+
+                    } else {
+                        $('#msgBox').html(data);
+                    }
+                },
+                error: function (data) {
+                    $('#msgBox').html("Something went wrong");
+                    console.log(data.responseText);
+                }
+            });
+        }
+
+        else if (totalObjectsInObjects != 0) {
+            $.ajax({
+                type: 'POST',
+                url: URL + '/migrate/objects/to/short/code',
+                success: function (data) {
+                    if (data == "ok") {
+                        location.reload();
+                    } else {
+                        $('#msgBox').html(data);
+                        location.reload();
+                    }
+                },
+                error: function (data) {
+                    $('#msgBox').html("Check console message");
+                    console.log(data.responseText);
+                }
+            });
+        }
+
+        else if (totalRandomObjectsInObject != 0) {
+            $.ajax({
+                type: 'POST',
+                url: URL + '/insert/random/object/in/object',
+                success: function (data) {
+                    if (data == "ok") {
+
+                        location.reload();
+
+
+                    } else {
+                        $('#msgBox').html(data);
+                        location.reload();
+                    }
+                },
+                error: function (data) {
+                    $('#msgBox').html("Check console message");
+                    console.log(data.responseText);
+                }
+            })
+        }
+        else {
             $('#msgBox').html("Migration Done");
         }
 
@@ -162,4 +286,53 @@
             }
         });
     });
+
+    function insertPage() {
+        $.ajax({
+            type: 'post',
+            url: URL + '/insert/page',
+            success: function (data) {
+                if (data == "done") {
+                    location.reload();
+                }
+
+
+                $('#msgBox').html("Success ." + data.count + " pages migrated");
+
+                if (data.status == "success") {
+                    insertPage();
+                }
+
+
+            }, error: function (data) {
+                $('#msgBox').html(data.responseText);
+            }
+        });
+    }
+
+    function insertPost() {
+
+        $('#msgBox').html("Now running article migration . Please wait .... <br><img height='50' width='50' src='https://www.createwebsite.net/wp-content/uploads/2015/09/GD.gif'>");
+        $.ajax({
+            type: 'POST',
+            url: URL + '/insert/post',
+            success: function (data) {
+                if (data == "done") {
+                    location.reload();
+                }
+
+                if (data.status == "ok") {
+                    var d = new Date();
+                    $('#msgBox').html(data.count + " article Migrated [ " + d + " ] ");
+
+                }
+            },
+            error: function (data) {
+                $('#migratePosts').html("Start Post Migration");
+                $('#msgBox').html("Something went wrong");
+                console.log(data.responseText);
+
+            }
+        });
+    }
 </script>

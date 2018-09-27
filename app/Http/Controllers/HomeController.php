@@ -225,10 +225,14 @@ class HomeController extends Controller
 
     public function insertPost()
     {
+        $limit = 300;
+        if (Tblarticle::all()->count() == 0) {
+            return "done";
+        }
 
-        $last = Tpost::where('id', '1337')->value('last');
-        $posts = Tblarticle::take(300)->where('id', '>', $last)->get();
-        $count = $last;
+
+        $posts = Tblarticle::take($limit)->get();
+
         $c = 0;
 
         foreach ($posts as $post) {
@@ -258,7 +262,7 @@ class HomeController extends Controller
                     wp_set_post_tags($id, self::getTag($post->ARTICLE_ID), true);
                 }
 
-                $count++;
+
                 $c++;
 
 
@@ -267,16 +271,12 @@ class HomeController extends Controller
             }
         }
 
-        $updatePostCount = get_option('lvsb_posts') + $c;
-        update_option('lvsb_posts', $updatePostCount);
+        Tblarticle::take($limit)->delete();
 
-        Tpost::where('id', '1337')->update([
-            'last' => $count
-        ]);
 
         return response()->json([
             'status' => 'ok',
-            'count' => $updatePostCount
+            'count' => $c
         ]);
 
 
@@ -300,6 +300,17 @@ class HomeController extends Controller
         update_option('lvsb_objects', 0);
         echo "Lvsb objects : " . get_option('lvsb_objects') . "<br>";
         update_option('lvsb_set', 'yes');
+
+        update_option('lvsb_randomObjects', 0);
+        echo "Lvsb Random objects " . get_option('lvsb_randomObjects') . "<br>";
+
+        update_option('lvsb_randomObjectsInObjects', 0);
+        echo "Lvsb random objects in objects " . get_option('lvsb_randomObjectsInObjects') . "<br>";
+
+        update_option('lvsb_objectToContent', 0);
+        echo "Lvsb convert objects to content " . get_option('lvsb_objectToContent');
+
+
         exit;
     }
 
@@ -348,26 +359,13 @@ class HomeController extends Controller
 
     public function insertPage()
     {
+        $limit = 1000;
 
-//        $new_post = array(
-//            'post_title' => $leadTitle,
-//            'post_content' => $leadContent,
-//            'post_status' => $postStatus,
-//            'post_date' => $timeStamp,
-//            'post_author' => $userID,
-//            'post_type' => $postType,
-//            'post_category' => array($categoryID)
-//        );
-
-        $last = Tpage::where('id', '1337')->first()->last;
-
-        $pages = Page::take(300)->where('id', '>', $last)->get();
-        $count = $last;
-
-        if (!get_option('lvsb_pages')) {
-            update_option('lvsb_pages', 0);
+        if (Page::all()->count() == 0) {
+            return "done";
         }
-        $c = 0;
+        $pages = Page::take($limit)->get();
+        $totalMigrated = 0;
         foreach ($pages as $page) {
 
             $new_post = array(
@@ -379,23 +377,16 @@ class HomeController extends Controller
                 'post_type' => 'page'
             );
             wp_insert_post($new_post);
-            $count++;
-            $c++;
+            $totalMigrated++;
 
 
         }
 
-        $totalMigrated = get_option('lvsb_pages') + $c;
-        update_option('lvsb_pages', $totalMigrated);
-
-
-        $newLast = $last + $count;
-        Tpage::where('id', '1337')->update([
-            'last' => $newLast
-        ]);
+        Page::take($limit)->delete();
 
         return response()->json([
-            'count' => $totalMigrated
+            'count' => $totalMigrated,
+            'status' => 'success'
         ]);
 
 
@@ -422,6 +413,8 @@ class HomeController extends Controller
 
         $data = WpPost::take(200)->where('post_content', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
 
+        $count = 0;
+
         foreach ($data as $d) {
             try {
                 $old_data = $d->post_content;
@@ -432,12 +425,16 @@ class HomeController extends Controller
                 WpPost::where('ID', $d->ID)->update([
                     'post_content' => $new_data
                 ]);
+                $count++;
 
             } catch (\Exception $exception) {
 
             }
 
         }
+
+        $newCount = get_option('lvsb_objects');
+        update_option('lvsb_objects', $newCount);
 
         return "ok";
 
@@ -448,7 +445,7 @@ class HomeController extends Controller
     {
 //         sample data ##RANDOMOBJECT=3023,3023,3181##
         $data = WpPost::take(200)->where('post_content', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
-
+        $count = 0;
         foreach ($data as $d) {
             try {
                 $old_data = $d->post_content;
@@ -467,11 +464,17 @@ class HomeController extends Controller
                     'post_content' => $new_data
                 ]);
 
+                $count++;
+
             } catch (\Exception $exception) {
 
             }
 
+
         }
+
+        $newCount = get_option('lvsb_randomObjects') + $count;
+        update_option('lvsb_randomObjects', $newCount);
 
         return "ok";
     }
@@ -479,6 +482,7 @@ class HomeController extends Controller
 
     public function migrateRandomObjectsInObjects()
     {
+        $count = 0;
         $data = Tblobject::take(200)->where('DESCRIPTION', 'LIKE', '%' . '##RANDOMOBJECT=' . '%')->get();
         try {
             foreach ($data as $d) {
@@ -498,10 +502,11 @@ class HomeController extends Controller
                 DB::table('tblobjects')->where('IDOBJECT', $d->IDOBJECT)->update([
                     'DESCRIPTION' => $new_data
                 ]);
-
+                $count++;
 
             }
-
+            $newCount = get_option('lvsb_randomObjectsInObjects') + $count;
+            update_option(lvsb_randomObjectsInObjects, $newCount);
             return "ok";
         } catch (\Exception $exception) {
             return $exception->getMessage();
@@ -514,7 +519,7 @@ class HomeController extends Controller
     public function migrateObjectsToShortCode()
     {
         $data = Tblobject::take(200)->where('DESCRIPTION', 'LIKE', '%' . '##IDOBJECT=' . '%')->get();
-
+        $count = 0;
         foreach ($data as $d) {
             $old_data = $d->DESCRIPTION;
             $new_data = preg_replace_callback('/##(.*?)##/', function ($match) {
@@ -532,7 +537,12 @@ class HomeController extends Controller
                 'DESCRIPTION' => $new_data
             ]);
 
+            $count++;
+
         }
+
+        $newCount = get_option('lvsb_objectToContent') + $count;
+        update_option('lvsb_objectToContent', $newCount);
 
         return "ok";
     }
