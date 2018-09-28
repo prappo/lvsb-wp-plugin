@@ -259,7 +259,7 @@ class HomeController extends Controller
                 $id = wp_insert_post($my_post); // wp post id
 
                 foreach (Tblarticle_linktotag::where('ARTICLE_ID', $post->ARTICLE_ID)->get() as $tag) {
-                    wp_set_post_tags($id, self::getTag($post->ARTICLE_ID), true);
+                    wp_set_post_tags($id, self::getTag($tag->CATEGORY_ID), true);
                 }
 
 
@@ -282,9 +282,9 @@ class HomeController extends Controller
 
     }
 
-    public static function getTag($oldPostId)
+    public static function getTag($tagId)
     {
-        $tagId = Tblarticle_linktotag::where('ARTICLE_ID', $oldPostId)->value('TAG_ID');
+
         return Tblarticle_tag::where('TAG_ID', $tagId)->value('TAG_KEYWORD');
     }
 

@@ -231,7 +231,7 @@ if (!$app->runningInConsole()) {
 
         $metaOption = get_post_meta(get_the_ID(), 'lvsb_option');
 
-        if(isset($metaOption[0])){
+//        if(isset($metaOption[0])){
             if ($metaOption[0] != "no") {
                 $content = \App\Models\WpPost::where('ID', get_the_ID())->value('post_content');
                 $start = strpos($content, '<p>');
@@ -253,7 +253,7 @@ if (!$app->runningInConsole()) {
 
 
             }
-        }
+//        }
 
 
 
